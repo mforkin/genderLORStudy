@@ -1,0 +1,4 @@
+*.zip
+*-pages
+*-txt
+.DS_Store
