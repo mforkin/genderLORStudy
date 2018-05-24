@@ -5,6 +5,10 @@ import subprocess
 
 rootdir = '/Users/mike/resumeData'
 
+males = 0
+females = 0
+unsure = 0
+
 for subdir, dirs, files in os.walk(rootdir):
     for file in files:
         pagesValid = False
@@ -19,6 +23,15 @@ for subdir, dirs, files in os.walk(rootdir):
                     numHes = len(re.findall(" he ", content))
                     numShes = len(re.findall(" she ", content))
                 if numHes > numShes:
-                    print(os.rename(filepath, subdir + os.sep + "male" + os.sep + file))
+                    os.rename(filepath, subdir + os.sep + "male" + os.sep + file)
+                    males = males + 1
                 elif numShes > numHes:
-                    print(os.rename(filepath, subdir + os.sep + "female" + os.sep + file))	
+                    os.rename(filepath, subdir + os.sep + "female" + os.sep + file)
+                    females = females + 1
+                else:
+                    unsure = unsure + 1
+
+print("Males: %s" % males)
+print("females: %s" % females)
+print("unsure: %s" % unsure)
+
