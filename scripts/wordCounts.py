@@ -1,7 +1,7 @@
 from nltk.util import skipgrams
 import os
 
-ignore_words = set([a.upper() for a in ['a', 'the', 'of', 'and', 'is', 'an', 'to', 'in', 'this', 'was', 'I', 'she', 'he', 'have', 'her', 'with', 'that', 'his', 'write', 'writing', 'at', 'as', 'be', 'do', 'm', 'for', 'hesitate', '', 'She', 'School', 'University', '-', '_', 'contact', 'student', 'waived', 'has', 'residency', 'students', 'year', 'letter', 'um', 'mm','_l', 'Medical', 'l', 'peer', 'level', 'likely', 'free', 'whom']])
+ignore_words = set([a.upper() for a in ['a', 'the', 'of', 'and', 'is', 'an', 'to', 'in', 'this', 'was', 'I', 'she', 'he', 'have', 'her', 'with', 'that', 'his', 'write', 'writing', 'at', 'as', 'be', 'do', 'm', 'for', 'hesitate', '', 'She', 'School', 'University', '-', '_', 'contact', 'student', 'waived', 'has', 'residency', 'students', 'year', 'letter', 'um', 'mm','_l', 'Medical', 'l', 'peer', 'level', 'likely', 'free', 'whom', 'please', 'program', 'during', 'him', 'room', 'application', 'any', 'if', 'me', 'mm', 'mm:', 'w', 'may', 'behalf']])
 
 number_of_words = 2
 skip_dist = 5
@@ -55,16 +55,16 @@ print("Total: %s" % total_count)
 
 print("-------- grams ----------")
 print("female: ")
-for k in sorted(female_grams, key=female_grams.get, reverse=True)[0:10]:
+for k in sorted(female_grams, key=female_grams.get, reverse=True)[0:20]:
     print(k + " - " + str(female_grams[k]))
 
 print("male:")
-for k in sorted(male_grams, key=male_grams.get, reverse=True)[0:10]:
+for k in sorted(male_grams, key=male_grams.get, reverse=True)[0:20]:
     print(k + " - " + str(male_grams[k]))
 
 
 print("total:")
-for k in sorted(total_grams, key=total_grams.get, reverse=True)[0:10]:
+for k in sorted(total_grams, key=total_grams.get, reverse=True)[0:20]:
     print(k + " - " + str(total_grams[k]))
 
 
