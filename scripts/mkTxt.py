@@ -11,9 +11,9 @@ for subdir, dirs, files in os.walk(rootdir):
     for file in files:
         if subdir.endswith("pages"):
             filepath = subdir + os.sep + file
-            txtFPath = subdir[0:-5] + "txt" + os.sep + file[0:-5] + ".txt"
+            txtFPath = subdir[0:-5] + "txt" + os.sep + file[0:-8] + ".txt"
 
-            if filepath.endswith(".jpg"):
+            if filepath.endswith(".png"):
                 txt = pytesseract.image_to_string(Image.open(filepath))
                 with open(txtFPath, 'w') as wf:
                     wf.write(txt)
