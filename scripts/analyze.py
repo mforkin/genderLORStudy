@@ -1,4 +1,5 @@
 import pandas as pd
+import re
 
 import gensim
 from gensim.utils import simple_preprocess
@@ -18,7 +19,26 @@ def lemmatize_stemming(text):
 
 def preprocess(text):
     result = []
-    for token in gensim.utils.simple_preprocess(text):
+    document = text
+    # Remove all the special characters
+    document = re.sub(r'\W', ' ', str(document))
+
+    # remove all single characters
+    document = re.sub(r'\s+[a-zA-Z]\s+', ' ', document)
+
+    # Remove single characters from the start
+    document = re.sub(r'\^[a-zA-Z]\s+', ' ', document)
+
+    # Substituting multiple spaces with single space
+    document = re.sub(r'\s+', ' ', document, flags=re.I)
+
+    # Removing prefixed 'b'
+    document = re.sub(r'^b\s+', '', document)
+
+    # Converting to Lowercase
+    document = document.lower()
+
+    for token in gensim.utils.simple_preprocess(document):
         if token not in gensim.parsing.preprocessing.STOPWORDS and len(token) > 3:
             result.append(lemmatize_stemming(token))
     return result
