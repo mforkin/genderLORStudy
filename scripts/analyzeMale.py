@@ -26,15 +26,15 @@ def preprocess(text):
 
 femaleDataPath = '/home/mforkin/LOR/data/all-split/bigTxtFemale/data.csv'
 maleDataPath = '/home/mforkin/LOR/data/all-split/bigTxtMale/data.csv'
-resultsDirTfidf = '/home/mforkin/LOR/data/all-split/bigTxtFemale/resultsTfIdf.txt'
-resultsDirBow = '/home/mforkin/LOR/data/all-split/bigTxtFemale/resultsBOW.txt'
+resultsDirTfidf = '/home/mforkin/LOR/data/all-split/bigTxtMale/resultsTfIdf.txt'
+resultsDirBow = '/home/mforkin/LOR/data/all-split/bigTxtMale/resultsBOW.txt'
 
-femaleData = pd.read_csv(femaleDataPath, quotechar='"', escapechar='\\', doublequote=False)
-data_text = femaleData[['content']]
+maleData = pd.read_csv(maleDataPath, quotechar='"', escapechar='\\', doublequote=False)
+data_text = maleData[['content']]
 data_text['index'] = data_text.index
 documents = data_text
 
-print("Num Female Documents --------------")
+print("Num male Documents --------------")
 print(len(documents))
 
 processed_docs = documents['content'].map(preprocess)
@@ -56,7 +56,7 @@ tfidf = models.TfidfModel(bow_corpus)
 
 corpus_tfidf = tfidf[bow_corpus]
 
-lda_model = gensim.models.LdaMulticore(bow_corpus, num_topics=15, id2word=dictionary, passes=2, workers=2)
+lda_model = gensim.models.LdaMulticore(bow_corpus, num_topics=10, id2word=dictionary, passes=2, workers=2)
 
 print('Bag Of Words ------------------')
 with open(resultsDirBow, 'w') as bowOut:
@@ -69,7 +69,7 @@ with open(resultsDirBow, 'w') as bowOut:
         print('Topic: {} \nWords: {}'.format(idx, topic))
 
 print('TFIDF --------------------------')
-lda_model_tfidf = gensim.models.LdaMulticore(corpus_tfidf, num_topics=15, id2word=dictionary, passes=2, workers=4)
+lda_model_tfidf = gensim.models.LdaMulticore(corpus_tfidf, num_topics=10, id2word=dictionary, passes=2, workers=4)
 
 with open(resultsDirTfidf, 'a') as tfidfOut:
     for idx, topic in lda_model_tfidf.print_topics(-1):
@@ -79,5 +79,4 @@ with open(resultsDirTfidf, 'a') as tfidfOut:
         tfidfOut.write(topic)
         tfidfOut.write('\n')
         print('Topic: {} \nWords: {}'.format(idx, topic))
-
 
