@@ -4,6 +4,11 @@ import numpy as np
 import re
 import csv
 import math
+from nltk.stem import WordNetLemmatizer, SnowballStemmer
+import gensim
+
+np.random.seed(2020)
+stemmer = SnowballStemmer('english')
 
 model_filepath = '/home/mforkin/LOR/fasttext/crawl-300d-2M-subword.bin'
 maleDataPath = '/home/mforkin/LOR/data/all-split/bigTxtMale/data.csv'
@@ -18,91 +23,51 @@ femaleDocs = {}
 maleEmbedding = np.array([0]*300, dtype='f')
 femaleEmbedding = np.array([0]*300, dtype='f')
 
+def lemmatize_stemming(text):
+    return stemmer.stem(WordNetLemmatizer().lemmatize(text, pos='v'))
+
+def tokenize_document(doc_content):
+    return [lemmatize_stemming(token) for token in gensim.utils.simple_preprocess(doc_content, deacc=True) if len(token) > 3 and token not in gensim.parsing.preprocessing.STOPWORDS]
+
+def generate_embedding(doc):
+    doc_embedding = np.array([0]*300, dtype='f')
+    for word in doc:
+        vector = model[word]
+        for dim, emb_val in enumerate(vector):
+            doc_embedding[dim] = doc_embedding[dim] + emb_val
+    for dim, emb_val in enumerate(doc_embedding):
+        doc_embedding[dim] = doc_embedding[dim] / len(doc)
+    return doc_embedding
+
+def generate_average_embedding(docs):
+    average_embedding = np.array([0]*300, dtype='f')
+    i = 0
+    d = 0
+    for k in docs:
+        if (i < len(docs) / 2):
+            i = i + 1
+            d = d + 1
+            doc_emb = generate_embedding(docs[k])
+            for dim, emb_val in enumerate(doc_emb):
+                average_embedding[dim] = average_embedding[dim] + emb_val
+    for dim, emb_val in enumerate(average_embedding):
+        average_embedding[dim] = emb_val / d
+    return average_embedding
+
 with open(maleDataPath) as csvf:
     r = csv.reader(csvf, delimiter=',', quotechar='"', escapechar='\\', doublequote=False)
     for row in r:
         document = row[1]
-        # Remove all the special characters
-        document = re.sub(r'\W', ' ', str(document))
-
-        # remove all single characters
-        document = re.sub(r'\s+[a-zA-Z]\s+', ' ', document)
-
-        # Remove single characters from the start
-        document = re.sub(r'\^[a-zA-Z]\s+', ' ', document)
-
-        # Substituting multiple spaces with single space
-        document = re.sub(r'\s+', ' ', document, flags=re.I)
-
-        # Removing prefixed 'b'
-        document = re.sub(r'^b\s+', '', document)
-
-        # Converting to Lowercase
-        document = document.lower()
-        maleDocs[row[0]] = [word for word in document.split(' ') if len(word) > 3]
+        maleDocs[row[0]] = tokenize_document(document)
 
 with open(femaleDataPath) as csvf:
     r = csv.reader(csvf, delimiter=',', quotechar='"', escapechar='\\', doublequote=False)
     for row in r:
         document = row[1]
-        # Remove all the special characters
-        document = re.sub(r'\W', ' ', str(document))
+        femaleDocs[row[0]] = tokenize_document(document)
 
-        # remove all single characters
-        document = re.sub(r'\s+[a-zA-Z]\s+', ' ', document)
-
-        # Remove single characters from the start
-        document = re.sub(r'\^[a-zA-Z]\s+', ' ', document)
-
-        # Substituting multiple spaces with single space
-        document = re.sub(r'\s+', ' ', document, flags=re.I)
-
-        # Removing prefixed 'b'
-        document = re.sub(r'^b\s+', '', document)
-
-        # Converting to Lowercase
-        document = document.lower()
-        femaleDocs[row[0]] = [word for word in document.split(' ') if len(word) > 3]
-
-i = 0
-md = 0
-fd = 0
-print('mdl: ' + str(len(maleDocs)))
-for k in maleDocs:
-    v = maleDocs[k]
-    i = i + 1
-    if i < (len(maleDocs) / 2):
-        md = md + 1
-        for w in v:
-            vec = model[w]
-            for idx, e in enumerate(vec):
-                maleEmbedding[idx] = maleEmbedding[idx] + e
-
-for i, e in enumerate(maleEmbedding):
-    maleEmbedding[i] = e / md
-
-i = 0
-for k in femaleDocs:
-    v = femaleDocs[k]
-    i = i + 1
-    if i < (len(femaleDocs) / 2):
-        fd = fd + 1
-        for w in v:
-            vec = model[w]
-            for idx, e in enumerate(vec):
-                femaleEmbedding[idx] = femaleEmbedding[idx] + e
-
-for i, e in enumerate(femaleEmbedding):
-    femaleEmbedding[i] = e / fd
-
-mt = 0
-ft = 0
-i = 0
-
-cm = 0
-incm = 0
-cf = 0
-incf = 0
+maleEmbedding = generate_average_embedding(maleDocs)
+femaleEmbedding = generate_average_embedding(femaleDocs)
 
 def getDiff(v, vec):
     res = 0
@@ -110,52 +75,33 @@ def getDiff(v, vec):
         res = res + math.sqrt((e - vec[idx]) * (e - vec[idx]))
     return res
 
-print ('mfdif: ' + str(getDiff(maleEmbedding, femaleEmbedding)))
+print ('diff male_general_emb vs female_general_emb: ' + str(getDiff(maleEmbedding, femaleEmbedding)))
 
-for k in maleDocs:
-    v = maleDocs[k]
-    i = i + 1
-    if i > (len(maleDocs) / 2) or True:
-        docVec = np.array([0]*300, dtype='f')
-        dl = 0
-        for w in v:
-            vec = model[w]
-            dl = dl + 1
-            for idx, e in enumerate(vec):
-                docVec[idx] = docVec[idx] + e
-        for idx, e in enumerate(docVec):
-            docVec[idx] = docVec[idx] / dl
-        malediff = getDiff(docVec, maleEmbedding)
-        femalediff = getDiff(docVec, femaleEmbedding)
-        if malediff < femalediff:
-            cm = cm + 1
-        else:
-            incm = incm + 1
+def evaluate (docs, correct_vector, incorrect_vector):
+    i = 0
+    result = {}
+    result['incorrect'] = 0
+    result['correct'] = 0
+    for k in docs:
+        if i > len(docs) / 2:
+            document_vector = generate_embedding(docs[k])
+            correct_diff = getDiff(document_vector, correct_vector)
+            incorrect_diff = getDiff(document_vector, incorrect_vector)
+            if correct_diff < incorrect_diff:
+                result['correct'] = result['correct'] + 1
+            else:
+                result['incorrect'] = result['incorrect'] + 1
+        i = i + 1
+    return result
 
-i = 0
-for k in femaleDocs:
-    v = femaleDocs[k]
-    i = i + 1
-    if i > (len(femaleDocs) / 2):
-        docVec = np.array([0]*300, dtype='f')
-        dl = 0
-        for w in v:
-            vec = model[w]
-            dl = dl + 1
-            for idx, e in enumerate(vec):
-                docVec[idx] = docVec[idx] + e
-        for idx, e in enumerate(docVec):
-            docVec[idx] = docVec[idx] / dl
-        if getDiff(docVec, femaleEmbedding) < getDiff(docVec, maleEmbedding):
-            cf = cf + 1
-        else:
-            incf = incf + 1
+male_results = evaluate(maleDocs, maleEmbedding, femaleEmbedding)
+female_results = evaluate(femaleDocs, femaleEmbedding, maleEmbedding)
 
-print('cm: ' + str(cm) + '\n')
-print('incm: ' + str(incm) + '\n')
-print('cf: ' + str(cf) + '\n')
-print('incf: ' + str(incf) + '\n')
-
-
+print('female_correct: ' + str(female_results['correct']) + '\n')
+print('female_incorrect: ' + str(female_results['incorrect']) + '\n')
+print('female percent_correct: ' + str(female_results['correct'] / (female_results['correct'] + female_results['incorrect'])))
+print('male_correct: ' + str(male_results['correct']) + '\n')
+print('male_incorrect: ' + str(male_results['incorrect']) + '\n')
+print('male_percent_correct: ' + str(male_results['correct'] / (male_results['correct'] + male_results['incorrect'])))
 
 
