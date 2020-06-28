@@ -4,6 +4,7 @@ import numpy as np
 import re
 import csv
 import math
+import io
 from nltk.stem import WordNetLemmatizer, SnowballStemmer
 import gensim
 
@@ -11,10 +12,23 @@ np.random.seed(2020)
 stemmer = SnowballStemmer('english')
 
 model_filepath = '/home/mforkin/LOR/fasttext/crawl-300d-2M-subword.bin'
+#model_filepath = '/home/mforkin/LOR/fasttext/crawl-300d-2M.vec'
 maleDataPath = '/home/mforkin/LOR/data/all-split/bigTxtMale/data.csv'
 femaleDataPath = '/home/mforkin/LOR/data/all-split/bigTxtFemale/data.csv'
 
 model = fasttext.load_model(model_filepath)
+
+
+def load_vectors(fname):
+    fin = io.open(fname, 'r', encoding='utf-8', newline='\n', errors='ignore')
+    n, d = [int(i) for i in fin.readline().split()]
+    data = {}
+    for line in fin:
+        tokens = line.rstrip().split(' ')
+        data[tokens[0]] = [float(t) for t in tokens[1:]]
+    return data
+
+#model = load_vectors(model_filepath)
 
 #femaleData = pd.read_csv(femaleDataPath, quotechar='"', escapechar='\\', doublequote=False)
 #maleData = pd.read_csv(maleDataPath, quotechar='"', escapechar='\\', doublequote=False)
@@ -44,7 +58,7 @@ def generate_average_embedding(docs):
     i = 0
     d = 0
     for k in docs:
-        if (i < len(docs) / 2):
+        if (i < 0.5 * len(docs)):
             i = i + 1
             d = d + 1
             doc_emb = generate_embedding(docs[k])
@@ -58,13 +72,19 @@ with open(maleDataPath) as csvf:
     r = csv.reader(csvf, delimiter=',', quotechar='"', escapechar='\\', doublequote=False)
     for row in r:
         document = row[1]
-        maleDocs[row[0]] = tokenize_document(document)
+        key = row[0]
+        if key in maleDocs:
+            key = key + str(np.random.rand())
+        maleDocs[key] = tokenize_document(document)
 
 with open(femaleDataPath) as csvf:
     r = csv.reader(csvf, delimiter=',', quotechar='"', escapechar='\\', doublequote=False)
     for row in r:
         document = row[1]
-        femaleDocs[row[0]] = tokenize_document(document)
+        key = row[0]
+        if key in femaleDocs:
+            key = key + str(np.random.rand())
+        femaleDocs[key] = tokenize_document(document)
 
 maleEmbedding = generate_average_embedding(maleDocs)
 femaleEmbedding = generate_average_embedding(femaleDocs)
@@ -83,7 +103,7 @@ def evaluate (docs, correct_vector, incorrect_vector):
     result['incorrect'] = 0
     result['correct'] = 0
     for k in docs:
-        if i > len(docs) / 2:
+        if i > 0.5 * len(docs):
             document_vector = generate_embedding(docs[k])
             correct_diff = getDiff(document_vector, correct_vector)
             incorrect_diff = getDiff(document_vector, incorrect_vector)
